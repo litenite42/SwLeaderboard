@@ -37,18 +37,24 @@ client.once('ready', () => {
    });
 });
 
-client.on('message', (receivedMessage) => {
+client.on('message', async (receivedMessage) => {
    // It's good practice to ignore other bots. This also makes your bot ignore itself
    // and not get into a spam loop (we call that "botception").
     if(!receivedMessage.content.startsWith(prefix) || receivedMessage.author.bot) return;
     
     const args = receivedMessage.content.slice(prefix.length).trim().split(/ +/);
-    const command = args.shift().toLowerCase();
+    const commandName = args.shift().toLowerCase();
     
-    if (!client.commands.has(command)) return;
+    if (!client.commands.has(commandName)) return;
+
+    const command = client.commands.get(commandName);
+
+    if (command.args && !args.length) {
+        return message.channel.send(`You didn't provide any arguments, ${receivedMessage.author}!`);
+    }
 
     try {
-        client.commands.get(command).execute(receivedMessage, args);
+       await command.execute(receivedMessage, args);
     } catch (error) {
         console.error(error);
         receivedMessage.reply('there was an error trying to execute that command!');
