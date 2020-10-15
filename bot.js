@@ -1,3 +1,6 @@
+let Discord = require('discord.js');
+let invis_space = '\u200B';
+
 class Bot {
     constructor() {
         this.data = '';
@@ -8,18 +11,40 @@ class Bot {
         }
     }
     
-    sendMessage(query, data, title, short) {
+    sendPlayerCard(query, data, title, short) {
         if (data.length){
-            let Discord = require('discord.js'); // necessary discord js require to get the EmbedMessage definition
-            const exampleEmbed = new Discord.MessageEmbed();
+             // necessary discord js require to get the EmbedMessage definition
+            const responseEmbed = new Discord.MessageEmbed();
 
-            exampleEmbed.setDescription(title);
-            
-            let header = this.detailsHeaders.long.join(this.detailsHeaders.separator);
-            if (!!short) {
-                header = this.detailsHeaders.short.join(this.detailsHeaders.separator);
-            }
-            exampleEmbed.addField('Details', header, false);
+            responseEmbed.setDescription(title);
+
+            let player = new Player(data);
+
+            let embed = player.PlayerCard(responseEmbed);
+
+            return query.channel.send({embed: embed});
+        }
+        query.channel.send("An error occurred. No Data was retrieved.")
+    }
+    
+    initLeaderPage(title, short) {
+        const responseEmbed = new Discord.MessageEmbed();
+
+        responseEmbed.setDescription(title);
+        
+        let header = this.detailsHeaders.long.join(this.detailsHeaders.separator);
+        if (!!short) {
+            header = this.detailsHeaders.short.join(this.detailsHeaders.separator);
+        }
+        responseEmbed.addField(invis_space, `**${header}**`, false);
+
+        return responseEmbed;
+    }
+
+    sendLeaderPage(query, data, title, short) {
+        if (data.length){
+         //   let Discord = require('discord.js'); // necessary discord js require to get the EmbedMessage definition
+            let responseEmbed = this.initLeaderPage(title+' pt. 1', short);
 
             for (let i = 0, j = 11; j < data.length + 11; i += 1, j+=11) 
             {
@@ -31,10 +56,14 @@ class Bot {
                 else {
                     description = player.longDescription(this.detailsHeaders.separator);
                 }
-                exampleEmbed.addField(`${player.rank}) ${player.user}`, description , false );
+                if (i == 10) {
+                    query.channel.send({embed: responseEmbed});
+                    responseEmbed = this.initLeaderPage(title+' pt. 2', short);
+                }
+                responseEmbed.addField(`${player.rank}) ${player.user}`, description , false );
             }
 
-            return query.channel.send({embed: exampleEmbed});
+            return query.channel.send({embed: responseEmbed});
         }
         query.channel.send("An error occurred. No Data was retrieved.")
     }
@@ -56,7 +85,23 @@ class Player {
         this.last_active = data[10];
     }
 
-    shortDescription(separator) {
+    PlayerCard(embed) {
+        embed.addField('Name', this.user, true);
+        embed.addField('XP', this.exp, true);
+        embed.addField(invis_space, '**Kill Stats**', false);
+        embed.addField('K/D', this.kdr, true);        
+        embed.addField('Kills', this.kills, true);
+        embed.addField('Headshots', this.headshots, true);
+        embed.addField('Deaths', this.deaths, true);
+        embed.addField( invis_space,'**Round Stats**', false);
+        embed.addField('Total', this.rounds_played , true);
+        embed.addField('Won', this.rounds_won, true);
+        embed.addField('Last Active', this.last_active, true);
+        
+        return embed;
+    }
+
+    shortDescription(separator, embed) {
         return [this.exp, this.kdr, this.rounds_won].join(separator);
     }
     longDescription(separator) {
