@@ -1,11 +1,7 @@
 const fs = require('fs');
 const Discord = require('discord.js');
-//const Bug = require('./bug.js').default;
-//const Command = require('./command.js');
+
 const path = require('path');
-//var unload = require('unload');
-// load the file containing a JSO w/ all other pertinent file names
-//const main_path = path.dirname(__dirname);
 // file containing authorication info
 const auth = require(`./auth.json`);
 
@@ -24,8 +20,6 @@ for (const file of commandFiles) {
 	// with the key as the command name and the value as the exported module
 	client.commands.set(command.name, command);
 }
-
-
 
 client.once('ready', () => {
     console.log(prefix)
