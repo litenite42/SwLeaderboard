@@ -10,21 +10,30 @@ module.exports = {
         
         let result = '';
         let page = args[0];
-
+        let page_number_msg = 'Currently, only pages 1-10 [and their negatives] are available!'
         if (!page && !Number.isNaN(page)) {
-            return message.channel.send('You did not enter page number! Currently, only pages 1-10 are available!');
+            return message.channel.send('You did not enter page number! '+page_number_msg );
         }
-        if (page < 1)
-            page = 11 + Number(page); // allow referencing from the end (page 10 == page -1)
+
+        let page_abs = Math.abs(page);
+        if (page_abs < 1 || page_abs > 10) {
+            return message.channel.send('Incorrect page number entered! '+page_number_msg)
+        }
+        
+        let BOT  = require('../bot.js');
+        let bot = new BOT();
+
+        function mod(n, m) {
+            return ((n % m) + m) % m;
+        }
+
+        page = mod(page, 11);
             
         result = await fetch(`${url}?page=${page}`).then(r => r.text()); // get the page using the correct page number
 
         const document = new JSDOM(result).window.document; // create a virtual dom from the page
 
         let data = Array.prototype.slice.call(document.querySelectorAll('tbody tr td')).map(f => f.textContent); // get an array of all the data cells in the table
-
-        let BOT  = require('../bot.js');
-        let bot = new BOT();
 
         bot.sendMessage(message, data, `[Leaderboard Page ${page}](${url.replace('modern/', '')})`);
 	},

@@ -2,6 +2,7 @@ class Bot {
     constructor() {
         this.data = '';
     }
+    
     sendMessage(query, data, title) {
         if (data.length){
             let Discord = require('discord.js'); // necessary discord js require to get the EmbedMessage definition
