@@ -24,7 +24,7 @@ for (const file of commandFiles) {
 client.once('ready', () => {
     console.log(prefix)
    client.channels.cache.forEach((channel) => {
-      if (channel.type === 'text' && channel.name == 'general' && silent !== 0)
+      if (channel.type === 'text' && channel.name == 'leaderboard' && silent !== 0)
       {
          channel.send(`Hello from <@${client.user.id}>!\nEnter ${prefix}help for assistance.`);
       }
@@ -38,13 +38,29 @@ client.on('message', async (receivedMessage) => {
     
     const args = receivedMessage.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();
+
+    if (commandName == 'help') {
+      let list = '';
+      
+      for (let command of client.commands) {
+         command = command[1];
+         
+         let listing = `${prefix}${command.name} `;
+         if (!!command.usage) {
+            listing += command.usage;
+         }
+         list += listing + '\n';
+      }
+      
+      return receivedMessage.channel.send(list);
+    }
     
     if (!client.commands.has(commandName)) return;
 
     const command = client.commands.get(commandName);
 
     if (command.args && !args.length) {
-        return message.channel.send(`You didn't provide any arguments, ${receivedMessage.author}!`);
+        return receivedMessage.channel.send(`You didn't provide any arguments, ${receivedMessage.author}!`);
     }
 
     try {

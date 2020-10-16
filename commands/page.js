@@ -1,6 +1,13 @@
+function mod(n, m) {
+    return ((n % m) + m) % m; // taken from: https://web.archive.org/web/20090717035140if_/javascript.about.com/od/problemsolving/a/modulobug.htm for explanation of negative modules in js
+}
+let short_length_aliases = ['s', 'st', 'short'];
 module.exports = {
 	name: 'page',
-	description: 'Get [count] players from the leaderboard',
+    description: 'Get certain page of players from the leaderboard',
+    args: true,
+    usage: '<page_nbr> [length_mod('+short_length_aliases.join()+')]\n- page_nbr [negative indices welcome] is required, while length_mod defaults to long\n- Use *s,st,or short* for short descriptions',
+    short_aliases : short_length_aliases,
 	async execute(message, args) {
         let url = 'https://skillwarz.com/modern/leaderboard.php'; // url for the sw leaderboard (can be found using any browser's dev tools Network tab)
         const jsdom = require('jsdom'); // node doesn't support dom natively, so import a dom parser 
@@ -12,20 +19,16 @@ module.exports = {
         let page = args[0];
         let page_number_msg = 'Currently, only pages 1-10 [and their negatives] are available!'
         if (!page && !Number.isNaN(page)) {
-            return message.channel.send('You did not enter page number! '+page_number_msg );
+            return message.channel.send(this.usage+'\nYou did not enter page number! '+page_number_msg );
         }
 
         let page_abs = Math.abs(page);
         if (page_abs < 1 || page_abs > 10) {
-            return message.channel.send('Incorrect page number entered! '+page_number_msg)
+            return message.channel.send(this.usage+'\nIncorrect page number entered! '+page_number_msg)
         }
-        
+
         let BOT  = require('../bot.js');
         let bot = new BOT();
-
-        function mod(n, m) {
-            return ((n % m) + m) % m;
-        }
 
         page = mod(page, 11);
             
@@ -35,6 +38,12 @@ module.exports = {
 
         let data = Array.prototype.slice.call(document.querySelectorAll('tbody tr td')).map(f => f.textContent); // get an array of all the data cells in the table
 
-        bot.sendMessage(message, data, `[Leaderboard Page ${page}](${url.replace('modern/', '')})`);
+        let short = false;
+
+        if (!!args[1] && this.short_aliases.includes(args[1])){
+            short = true;
+        }
+
+        bot.sendMessage(message, data, `[Leaderboard Page ${page}](${url.replace('modern/', '')})`, short);
 	},
 };
