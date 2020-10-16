@@ -89,6 +89,3 @@ typings/
 # IDE preferences
 .idea/
 .vscode/
-
-# config file
-config.json
