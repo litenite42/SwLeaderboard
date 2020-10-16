@@ -1,9 +1,6 @@
 const fs = require('fs');
 const Discord = require('discord.js');
-
-const path = require('path');
-// file containing authorication info
-const auth = require(`./auth.json`);
+const result = require('dotenv').config();
 
 // file containing config info
 const {prefix, silent} = require(`./config.json`);
@@ -71,4 +68,4 @@ client.on('message', async (receivedMessage) => {
     }
 });
 
-client.login(auth.token); // Replace XXXXX with your bot token
+client.login(process.env.AUTH_TOKEN); // Replace XXXXX with your bot token
