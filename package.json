@@ -6,7 +6,7 @@
     "node": "12.x"
   },
   "scripts": {
-    "start": "pm2 start ./index.js"
+    "start": "node ./index.js"
   },
   "main": "index.js",
   "repository": {
@@ -20,7 +20,7 @@
     "leaderboard"
   ],
   "author": "litenite",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/nyx-litenite/SwLeaderboard/issues"
   },
