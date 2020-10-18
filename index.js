@@ -19,7 +19,6 @@ for (const file of commandFiles) {
 }
 
 client.once('ready', () => {
-    console.log(prefix)
    client.channels.cache.forEach((channel) => {
       if (channel.type === 'text' && channel.name == 'leaderboard' && silent !== 0)
       {
@@ -42,7 +41,7 @@ client.on('message', async (receivedMessage) => {
       for (let command of client.commands) {
          command = command[1];
          
-         let listing = `${prefix}${command.name} `;
+         let listing = `**${command.name}** - *${command.description}*\n${prefix}${command.name} `;
          if (!!command.usage) {
             listing += command.usage;
          }
@@ -63,7 +62,6 @@ client.on('message', async (receivedMessage) => {
     try {
        await command.execute(receivedMessage, args);
     } catch (error) {
-        console.error(error);
         receivedMessage.reply('there was an error trying to execute that command!');
     }
 });
