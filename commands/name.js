@@ -8,19 +8,14 @@ module.exports = {
         const jsdom = require('jsdom'); // node doesn't support dom natively, so import a dom parser 
         const {JSDOM} = jsdom;
         const fetch = require('node-fetch'); // not gonna lie just looked up node http requests. didn't see it had them native til later :/
-        const querystring = require('querystring'); // can be useful if you want to be careful w/ passing of parameters
         
         let result = '';
-        let name = args[0];
+        let name = args[0] ;
 
-        if (!name && !Number.isNaN(name)) {
-            return message.channel.send('You did not enter name number! Currently, only pages 1-10 are available!');
+        if (!name || !name.length || name.length < 3) {
+            return message.channel.send(`Entered Username (${name}) was invalid.\nRemember that username\'s are case-sensitive.`);
         }
-        
-        let body = {
-            search : name
-        }
-        result = await fetch(`${url}`, {
+        result = await fetch(url, {
             method: "post",
             body: 'search='+name,
             headers: { "Content-Type": "application/x-www-form-urlencoded" }
