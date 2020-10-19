@@ -11,6 +11,7 @@
 0. create a file named `.env` and create a single line  
     `AUTH_TOKEN=ENTER-YOUR-TOKEN-HERE`
     with the token from the last step
+    * You can re-use `.env.sample` if you'd like
 0. Now just invite your bot to your server; [directions](https://discordjs.guide/preparations/adding-your-bot-to-servers.html#bot-invite-links)
-0. Make sure to create a **#leaderboard** channel (this can be changed in the `index.js` file if desired and could be made into a config option)
+0. Make sure to create a **leaderboard** channel (this can be changed in the `index.js` file if desired and could be made into a config option)
 1. On running, `node index.js`, your bot should say hello in **#leaderboard** :D

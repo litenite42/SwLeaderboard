@@ -66,4 +66,4 @@ client.on('message', async (receivedMessage) => {
     }
 });
 
-client.login(process.env.AUTH_TOKEN); // Replace XXXXX with your bot token
+client.login(process.env.AUTH_TOKEN); // this assumes you followed the step in the README about a .env file. If you haven't, rename .env.sample and replace the appropriate text with your bot's token.
