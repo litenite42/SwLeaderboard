@@ -25,7 +25,7 @@ module.exports = {
             body: 'search='+name,
             headers: { "Content-Type": "application/x-www-form-urlencoded" }
           })
-          .then(r => { console.log(r); return r})
+          //.then(r => { console.log(r); return r})
           .then(res => res.text())
           .then(json => json)
           .catch(err => console.log(err)); // get the name using the correct name number
