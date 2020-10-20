@@ -1,12 +1,13 @@
 {
   "name": "sw-leaderboard",
   "description": "pages through the SkillWarz Leaderboard",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "engines": {
     "node": "12.x"
   },
   "scripts": {
-    "start": "node ./index.js"
+    "start": "node ./index.js",
+    "dev": "node ./index.js"
   },
   "main": "index.js",
   "repository": {

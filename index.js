@@ -1,9 +1,17 @@
 const fs = require('fs');
 const Discord = require('discord.js');
-const result = require('dotenv').config();
-
 // file containing config info
-const {prefix, silent} = require(`./config.json`);
+const {prefix, silent, environment} = require(`./config.json`);
+let result = require('dotenv');
+
+if (!!environment && environment == 'production') {
+   result = result.config();
+}
+else {
+   result = result.config({path : 'dev.env'});
+}
+console.log(environment)
+const version = process.env.npm_package_version
 
 const client = new Discord.Client();
 client.commands = new Discord.Collection();
@@ -36,7 +44,12 @@ client.on('message', async (receivedMessage) => {
     const commandName = args.shift().toLowerCase();
 
     if (commandName == 'help') {
-      let list = '';
+      let list = `${prefix}help`;
+      let verbose = !args[0] ||  !(['s', 'st','short'].indexOf(args[0])+1);
+      if (verbose) {
+         list += `\n- Use s, st, or short for smaller message`;
+      }
+      list += '\n\n';
       
       for (let command of client.commands) {
          command = command[1];
@@ -45,15 +58,24 @@ client.on('message', async (receivedMessage) => {
          if (!!command.usage) {
             listing += command.usage;
          }
+         if (verbose) {
+            if (!!command.extended_usage) {
+               listing += command.extended_usage;
+            }
+            listing += '\n';
+            if (!!command.aliases) {
+               listing += `*Aliases*: ${command.aliases.join(', ')}\n`;
+            }
+         }
          list += listing + '\n';
       }
       
       return receivedMessage.channel.send(list);
     }
     
-    if (!client.commands.has(commandName)) return;
-
-    const command = client.commands.get(commandName);
+    const command = client.commands.get(commandName) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
+   
+    if (!command) return;
 
     if (command.args && !args.length) {
         return receivedMessage.channel.send(`You didn't provide any arguments, ${receivedMessage.author}!`);
