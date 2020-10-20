@@ -6,8 +6,10 @@ module.exports = {
 	name: 'page',
     description: 'Get certain page of players from the leaderboard',
     args: true,
-    usage: '<page_nbr> [length_mod('+short_length_aliases.join()+')]\n- page_nbr [negative indices welcome] is required, while length_mod defaults to long\n- Use *s,st,or short* for short descriptions',
+    usage: '<page_nbr> [length_mod('+short_length_aliases.join()+')]',
     short_aliases : short_length_aliases,
+    aliases: ['p', 'pg'],
+    extended_usage: '\n- page_nbr [negative indices welcome] is required, while length_mod defaults to long\n- Use *s,st,or short* for short descriptions',
 	async execute(message, args) {
         let url = 'https://skillwarz.com/modern/leaderboard.php'; // url for the sw leaderboard (can be found using any browser's dev tools Network tab)
         const jsdom = require('jsdom'); // node doesn't support dom natively, so import a dom parser 
