@@ -32,7 +32,7 @@ module.exports = {
 
         page = mod(page, 11);
             
-        result = await fetch(`${url}?page=${page}`).then(r => { console.log(r); return r}).then(r => r.text()); // get the page using the correct page number
+        result = await fetch(`${url}?page=${page}`).then(r => r.text()); // get the page using the correct page number
 
         const document = new JSDOM(result).window.document; // create a virtual dom from the page
 
