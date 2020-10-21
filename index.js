@@ -42,36 +42,6 @@ client.on('message', async (receivedMessage) => {
     
     const args = receivedMessage.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();
-
-    if (commandName == 'help') {
-      let list = `${prefix}help`;
-      let verbose = !args[0] ||  !(['s', 'st','short'].indexOf(args[0])+1);
-      if (verbose) {
-         list += `\n- Use s, st, or short for smaller message`;
-      }
-      list += '\n\n';
-      
-      for (let command of client.commands) {
-         command = command[1];
-         
-         let listing = `**${command.name}** - *${command.description}*\n${prefix}${command.name} `;
-         if (!!command.usage) {
-            listing += command.usage;
-         }
-         if (verbose) {
-            if (!!command.extended_usage) {
-               listing += command.extended_usage;
-            }
-            listing += '\n';
-            if (!!command.aliases) {
-               listing += `*Aliases*: ${command.aliases.join(', ')}\n`;
-            }
-         }
-         list += listing + '\n';
-      }
-      
-      return receivedMessage.channel.send(list);
-    }
     
     const command = client.commands.get(commandName) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
    
