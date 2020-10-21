@@ -26,7 +26,7 @@ module.exports = {
         const { commands } = message.client;
         const verbosity_tags = ['s', 'st','short'];
         if (!args.length) {
-            initHelpMsg(data, message, commands);
+            return initHelpMsg(data, message, commands);
         }
 
         const name = args[0].toLowerCase();
@@ -40,7 +40,7 @@ module.exports = {
         }
 
         if (!command) {
-            initHelpMsg([], message, commands);
+            return initHelpMsg([], message, commands);
         }
         
         data.push(`**${command.name}** - *${command.description}*\n\`${prefix}${command.name}\` ${!!command.usage ? command.usage : ''}`);
