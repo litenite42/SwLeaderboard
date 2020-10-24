@@ -38,7 +38,7 @@ client.once('ready', () => {
 client.on('message', async (receivedMessage) => {
    // It's good practice to ignore other bots. This also makes your bot ignore itself
    // and not get into a spam loop (we call that "botception").
-    if(!receivedMessage.content.startsWith(prefix) || receivedMessage.author.bot) return;
+    if(!receivedMessage.content.slice(0, prefix.length).toLowerCase().startsWith(prefix) || receivedMessage.author.bot) return;
     
     const args = receivedMessage.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();
