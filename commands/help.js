@@ -1,9 +1,19 @@
 const { prefix } = require('../config.json');
+const { admin, user } = require('../roles.json');
+
 function initHelpMsg(data, message, commands) {
     data.push('Here\'s a list of all my commands:');
-            data.push(commands.map(command => `*${command.name}*`).join(', '));
-            data.push(`\nYou can send \`${prefix}help [command name]\` to get info on a specific command!`);
+            data.push(commands.filter(command => !command.role || command.role != 'admin' ).map(command => `*${command.name}*`).join(', '));
+                        
+            let admin_check = message.member.roles.cache.some(r=>admin.includes(r.name));
+
+           if (!!message.member && admin_check)
+           {
+               data.push(`**Admin Commands**:  `);
+                data.push(commands.filter(command => !!command.role || command.role == 'admin' ).map(command => `*${command.name}*`).join(', '));
+           }
             
+            data.push(`\nYou can send \`${prefix}help [command name]\` to get info on a specific command!`);
             
             return message.author.send(data, { split: true })
                                 .then(() => {

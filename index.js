@@ -1,5 +1,7 @@
 const fs = require('fs');
 const Discord = require('discord.js');
+const { admin, user } = require('./roles.json');
+
 // file containing config info
 const {prefix, silent, environment} = require(`./config.json`);
 let result = require('dotenv');
@@ -38,16 +40,36 @@ client.once('ready', () => {
 client.on('message', async (receivedMessage) => {
    // It's good practice to ignore other bots. This also makes your bot ignore itself
    // and not get into a spam loop (we call that "botception").
-    if(!receivedMessage.content.startsWith(prefix) || receivedMessage.author.bot) return;
+    if(!receivedMessage.content.slice(0, prefix.length).toLowerCase().startsWith(prefix) || receivedMessage.author.bot) return;
     
     const args = receivedMessage.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();
     
     const command = client.commands.get(commandName) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
    
-    if (!command) return;
+   let some_error = false;
 
-    if (command.args && !args.length) {
+    if (!command ) return;
+
+    if (!!command.role && command.role == 'admin') {
+      let member = receivedMessage.member;
+         try {
+            let admin_check = (!!receivedMessage.member && !!member && !!member.roles && member.roles.cache.some(r=>admin.includes(r.name)));
+            if (!admin_check) {
+               receivedMessage.author.send('You do not have permission to run this command!');
+               receivedMessage.author.send(`Please respond in a server where you have any of the following roles: ${admin.join(',')}!`);
+               return;
+            }
+         }
+         catch (error) {
+            if (receivedMessage.guild === null) {
+               receivedMessage.author.send(`Please respond in a server where you have any of the following roles: ${admin.join(',')}!`);
+               return;
+            }
+         }
+      }
+
+    if ((command.args && !args.length) || some_error) {
         return receivedMessage.channel.send(`You didn't provide any arguments, ${receivedMessage.author}!`);
     }
 
