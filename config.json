@@ -1,5 +1,5 @@
 {
     "prefix": "swlb ",
     "silent" : 0,
-    "environment": "production"
+    "environment": "testing"
 }

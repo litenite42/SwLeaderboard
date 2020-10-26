@@ -90,3 +90,4 @@ dev.env
 # IDE preferences
 .idea/
 .vscode/
+config.json

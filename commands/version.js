@@ -4,7 +4,8 @@ module.exports = {
     args: false,
     usage: '',
     aliases: ['v', 'vrsn'],
-	async execute(message, args) {
+    async execute(message, args) {
+        console.log(args); // this is a workaround for eslint until i look into it more.
         let version = process.env.npm_package_version;
         let homepage = process.env.npm_package_homepage;
         let authors = process.env.npm_package_author_name;
@@ -19,5 +20,5 @@ module.exports = {
         Embed.setTimestamp();
 
         message.channel.send({embed: Embed});
-	},
+    },
 };
