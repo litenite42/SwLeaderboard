@@ -5,8 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta charset="UTF-8">
         <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400" rel="stylesheet">
-        <!-- <link rel="stylesheet" href="assets/classless.css" /> -->
-        <link rel="stylesheet" href="assets/dark.css"/>
+        <link rel="stylesheet" href="assets/dark.min.css"/>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     </head>
 
@@ -15,7 +14,7 @@
             <ul>
                 <li> 
                     <a href="#">
-                        <img src="assets/brand.png" height="18px" alt="Icon for the unofficial SkillWarz Scoreboard bot."> SW Scoreboard
+                        <img src="assets/brand.png" height="18px" alt="Icon for the unofficial SkillWarz Scoreboard bot."> <span>SW Scoreboard</span>
                     </a> 
                 </li>
                 <li class="float-right">
@@ -38,23 +37,28 @@
                 </div>
             </header>                      
             <section class="card">
-                <details>
-                    <summary>What's SkillWarz?</summary>
-                    <p>If you're here you probably already know ;P
-                        BUUuuuttt for those that may not....
-                        SkillWarz is a free-to-play (atm) FPS written in Unity by a single developer, <a href="https://www.youtube.com/user/OneManArmy3D">OneManArmy</a>. </p>
-                </details>
-                <details>
-                    <summary>What's this site?</summary>
-                    <p>Well like the long-winded title says, it's dedicated to the <strong>Unofficial</strong> Discord bot for SkillWarz (see above).
-                        The bots reads from the leaderboard on the game's forum to provide a quick way to access player information available there.
-                        This means that it can easily page (forwards/backwards) through the top 200 players or you can look for data about a specific user.
-                        Because it depends on the same (or close enough) requests as the scoreboard, the bot has the same limitations; namely: no extra fields 
-                        can be retrieved, player search is case-sensitive, and such. 
-                    </p>
-                </details>
+                <div class="accordion">
+                    <input type="radio" name="site-accordion" id="sw-about"/>
+                    <label for="sw-about">What's SkillWarz?</label>
+                    <div class="content">
+                        <p>If you're here you probably already know ;P
+                            BUUuuuttt for those that may not....
+                            SkillWarz is a free-to-play first-person shooter written in Unity by a single developer, <a href="https://www.youtube.com/user/OneManArmy3D">OneManArmy</a>. 
+                            It supports multiple OS's; such as: Windows, Mac, and Linux. It has very minimal spec requirements, so many players should be able to enjoy it without needing a "top-tier" system.
+                            Heck on my old Dell Latitude e5430 using a linux distro, I was able to maintain 60 frames/sec while fullscreen on low settings.</p>
+                    </div>
+                    <input type="radio" name="site-accordion" id="site-about"/>
+                    <label for="site-about">What's this site?</label>
+                    <div class="content">
+                        <p>Well like the long-winded title says, it's dedicated to the <strong>Unofficial</strong> Discord bot for SkillWarz (see above).
+                            The bots reads from the leaderboard on the game's forum to provide a quick way to access player information available there.
+                            This means that it can easily page (forwards/backwards) through the top 200 players or you can look for data about a specific user.
+                            Because it depends on the same (or close enough) requests as the scoreboard, the bot has the same limitations; namely: no extra fields 
+                            can be retrieved, player search is case-sensitive, and such. 
+                        </p>
+                    </div>
+                </div>
             </section>
-
         </main>
         <footer>
 
