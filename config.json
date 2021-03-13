@@ -1,5 +1,5 @@
 {
     "prefix": "swlb ",
-    "silent" : 0,
+    "silent" : 1,
     "environment": "production"
 }
