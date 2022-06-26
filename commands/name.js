@@ -34,7 +34,7 @@ module.exports = {
         const document = new JSDOM(result).window.document; // create a virtual dom from the name
 
         let data = Array.prototype.slice.call(document.querySelectorAll('tbody tr td'))
-										.map(f => f.textContent); // get an array of all the data cells in the table
+            .map(f => f.textContent); // get an array of all the data cells in the table
 
         let BOT = require('../bot.js');
         let bot = new BOT();
