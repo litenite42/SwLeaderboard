@@ -1,6 +1,13 @@
 let Discord = require('discord.js');
 let invis_space = '\u200B';
 
+let min_season_nbr = 1,
+    max_season_nbr = 4,
+    min_year = 2021,
+    date = new Date(),
+    max_year = date.getFullYear(),
+    current_season = Math.floor(date.getMonth() / 3) + 1
+
 class Bot {
     constructor() {
         this.data = '';
@@ -70,6 +77,59 @@ class Bot {
             });
         }
         query.channel.send("An error occurred. No Data was retrieved.")
+    }
+    isNum(x) {
+        const result = !isNaN(x),
+              boolReplace = !result ? ' NOT ' : ' ';
+
+        return result;
+    }
+
+    isEmptyArray(arr) {
+        return Array.isArray(arr) && !arr.length;
+    }
+
+    determineSeason(seasonNbr) {
+        let OPTION = require('./option.js');
+
+        let result = new OPTION();
+        result.default = current_season.toString();
+
+        if (this.isNum(seasonNbr)) {
+            seasonNbr = +seasonNbr;
+            if (seasonNbr >= min_season_nbr && seasonNbr <= max_season_nbr) {
+                result.value = `S${seasonNbr}`;
+            } else {
+                result.hasError = true;
+                result.msg = `Season must be in the interval [${min_season_nbr},${max_season_nbr}].`;
+            }       
+        }
+
+        return result;
+    }
+
+    determineYear(yearNbr) {
+        let OPTION = require('./option.js');
+        
+        let result = new OPTION();
+        result.default = max_year.toString();
+
+        if (this.isNum(yearNbr)) {
+            yearNbr = +yearNbr;
+
+            if (yearNbr >= min_year && yearNbr <= max_year) {
+                result.value = yearNbr.toString();
+            } else {
+                result.hasError = true;
+                result.msg = `Year must be in the interval [${min_year},${max_year}]`;
+            }
+        }
+
+        return result;
+    }
+
+    buildLeaderboardURL(args) {
+
     }
 }
 var numeral = require('numeral');
