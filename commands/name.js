@@ -1,12 +1,14 @@
+let BOT = require('../bot.js');
+let bot = new BOT();
+
 module.exports = {
     name: 'name',
     description: 'Get description of specified player.',
     args: true,
-    usage: '<user_name>',
+    usage: '<user_name>  [season_mod('+bot.season_aliases.join()+') season#] [year_mod('+bot.year_aliases.join()+') year#]',
     aliases: ['n', 'nm'],
-    extended_usage: '- Enter user_name of player in question\n- Search is case-sensitive, so: litenite and Litenite are not the same',
+    extended_usage: '- Enter user_name of player in question\n- Search is case-sensitive, so: litenite and Litenite are not the same.\n Seasons 1-4\n Year 2021-Current\nThe first recorded season is 2021s3',
     async execute(message, args) {
-        let url = 'https://skillwarz.com/modern/leaderboard.php'; // url for the sw leaderboard (can be found using any browser's dev tools Network tab)
         const jsdom = require('jsdom'); // node doesn't support dom natively, so import a dom parser
         const {
             JSDOM
@@ -14,11 +16,13 @@ module.exports = {
         const fetch = require('node-fetch'); // not gonna lie just looked up node http requests. didn't see it had them native til later :/
 
         let result = '';
-        let name = args[0];
+        let name = args.shift();
 
         if (!name || !name.length || name.length < 3) {
             return message.channel.send(`Entered Username (${name}) was invalid.\nRemember that username\'s are case-sensitive.`);
         }
+        
+        let url = bot.buildLeaderboardURL(args);
         result = await fetch(url, {
             method: "post",
             body: 'search=' + name,
@@ -35,9 +39,6 @@ module.exports = {
 
         let data = Array.prototype.slice.call(document.querySelectorAll('tbody tr td'))
             .map(f => f.textContent); // get an array of all the data cells in the table
-
-        let BOT = require('../bot.js');
-        let bot = new BOT();
 
         bot.sendPlayerCard(message, data, `Player Card`);
     },

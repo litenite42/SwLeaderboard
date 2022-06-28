@@ -102,7 +102,7 @@ class Bot {
         if (this.isNum(seasonNbr)) {
             seasonNbr = +seasonNbr;
             if (seasonNbr >= min_season_nbr && seasonNbr <= max_season_nbr) {
-                result.value = `S${seasonNbr}`;
+                result.value = `${seasonNbr}`;
             } else {
                 result.hasError = true;
                 result.msg = `Season must be in the interval [${min_season_nbr},${max_season_nbr}].`;
@@ -177,9 +177,8 @@ class Bot {
         } else if (!!yearText) {
             seasonText = `_S${current_season}`;
         }
-        
+
         let url = leaderboardUrl.replace('##YEAR##', yearText).replace('##SEASON##', seasonText);
-        console.log(url);
         return url;
     }
 
