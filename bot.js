@@ -1,5 +1,6 @@
 let Discord = require('discord.js');
 let invis_space = '\u200B';
+let leaderboardUrl = 'https://skillwarz.com/modern/leaderboard##YEAR####SEASON##.php';
 
 let min_season_nbr = 1,
     max_season_nbr = 4,
@@ -9,6 +10,9 @@ let min_season_nbr = 1,
     current_season = Math.floor(date.getMonth() / 3) + 1
 
 class Bot {
+    season_aliases = ['n', 'sn', 'season'];
+    year_aliases = ['y', 'yr', 'year'];
+
     constructor() {
         this.data = '';
         this.detailsHeaders = {
@@ -128,10 +132,63 @@ class Bot {
         return result;
     }
 
-    buildLeaderboardURL(args) {
+    buildLeaderboardURL(args) {        
+        let yearText = '',
+            seasonText = '';
+        
+        for (let ndx = 0; ndx < args.length; ndx++) {
+            let arg = args[ndx];
+            
+            if (!!arg && this.season_aliases.includes(arg)) {
+                ndx++;
+                let seasonNbr = args[ndx];
 
+                let seasonResult = this.determineSeason(seasonNbr);
+                let seasonValue = seasonResult.getValueWithOffset();
+
+                if (seasonValue.offset) {
+                    ndx--;
+                }
+
+                seasonText = seasonValue.value;
+            } else if (!!arg && this.year_aliases.includes(arg)) {
+                ndx++;
+                let yearNbr = args[ndx];
+
+                let yearResult = this.determineYear(yearNbr);
+                let year = yearResult.getValueWithOffset();
+
+                if (year.offset){
+                    ndx--;
+                }
+
+                yearText = year.value;
+            }
+        }
+
+        if (!!yearText) {
+            yearText = `_${yearText}`;
+        } else if (!!seasonText) {
+            yearText = `_${max_year}`;
+        }
+        
+        if (!!seasonText) {
+            seasonText = `_S${seasonText}`;
+        } else if (!!yearText) {
+            seasonText = `_S${current_season}`;
+        }
+        
+        let url = leaderboardUrl.replace('##YEAR##', yearText).replace('##SEASON##', seasonText);
+        console.log(url);
+        return url;
+    }
+
+    convertToWebpageUrl(url) {
+        return url.replace('modern/', '');
     }
 }
+
+
 var numeral = require('numeral');
 class Player {
     constructor(data) {
