@@ -1,7 +1,7 @@
 {
   "name": "sw-leaderboard",
   "description": "pages through the SkillWarz Leaderboard",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "engines": {
     "node": "12.x"
   },
