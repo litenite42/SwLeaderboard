@@ -185,6 +185,32 @@ class Bot {
     convertToWebpageUrl(url) {
         return url.replace('modern/', '');
     }
+
+    seasonalOptionalParams() {
+        let optionalParams = `[season_mod(${this.season_aliases.join(', ')}) season#] [year_mod(${this.year_aliases.join(', ')}) year#]`;
+
+        return optionalParams;
+    }
+
+    seasonalLeaderboardHelp(commandName) {
+        let helpText = 
+`- season_mod and year_mod are optional parameters used separately (or together) to modify which leaderboard results will be pulled from.
+~ Available Values:
+    + Seasons 1-4
+    + Year 2021-Current
+~ Defaults:
+    + If neither parameter is received (swlb ${commandName} 1),
+        the overall leaderboard will be used.
+    + If only the season parameter is present (swlb ${commandName} 1 n 2),
+        the specified seasonal leaderboard for the CURRENT year will be pulled.
+    + If only the year parameter is present (swlb ${commandName} 1 y 2022),
+        the specified year's current seasonal leaderboard will be pulled.
+
+~ The first recorded season is y 2021 n 3`;
+
+        return helpText;
+
+    }
 }
 
 

@@ -68,12 +68,12 @@ module.exports = {
 
         data.push(`**${command.name}** - *${command.description}*\n\`${prefix}${command.name}\` ${!!command.usage ? command.usage : ''}`);
 
-        if (verbose) {
-            if (!!command.extended_usage) {
-                data.push(command.extended_usage);
-            }
+        if (verbose) {            
             if (!!command.aliases) {
                 data.push(`*Aliases*: ${command.aliases.join(', ')}`);
+            }
+            if (!!command.extended_usage) {
+                data.push(command.extended_usage);
             }
         }
 

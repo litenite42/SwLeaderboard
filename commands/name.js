@@ -5,9 +5,9 @@ module.exports = {
     name: 'name',
     description: 'Get description of specified player.',
     args: true,
-    usage: '<user_name>  [season_mod('+bot.season_aliases.join()+') season#] [year_mod('+bot.year_aliases.join()+') year#]',
+    usage: '<user_name> '+bot.seasonalOptionalParams(),
     aliases: ['n', 'nm'],
-    extended_usage: '- Enter user_name of player in question\n- Search is case-sensitive, so: litenite and Litenite are not the same.\n Seasons 1-4\n Year 2021-Current\nThe first recorded season is 2021s3',
+    extended_usage: '- Enter user_name of player in question\n- Search is case-sensitive, so: litenite and Litenite are not the same.\n'+bot.seasonalLeaderboardHelp("name"),
     async execute(message, args) {
         const jsdom = require('jsdom'); // node doesn't support dom natively, so import a dom parser
         const {

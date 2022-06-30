@@ -2,22 +2,21 @@ function mod(n, m) {
     return ((n % m) + m) % m; // taken from: https://web.archive.org/web/20090717035140if_/javascript.about.com/od/problemsolving/a/modulobug.htm for explanation of negative modules in js
 }
 
-
-        let BOT = require('../bot.js');
-        let bot = new BOT();
-
+let BOT = require('../bot.js');
+let bot = new BOT();
+let seasonalHelpText = bot.seasonalLeaderboardHelp("page");
 let short_length_aliases = ['s', 'st', 'short'];
 
 module.exports = {
     name: 'page',
     description: 'Get certain page of players from the leaderboard',
     args: true,
-    usage: '<page_nbr> [length_mod(' + short_length_aliases.join() + ')] [season_mod('+bot.season_aliases.join()+') season#] [year_mod('+bot.year_aliases.join()+') year#]',
+    usage: '<page_nbr> [length_mod(' + short_length_aliases.join() + ')] '+bot.seasonalOptionalParams(),
     short_aliases: short_length_aliases,
 	year_aliases: bot.year_aliases,
 	season_aliases: bot.season_aliases,
     aliases: ['p', 'pg'],
-    extended_usage: '- page_nbr [negative indices welcome] is required, while length_mod defaults to long\n- Use *s,st,or short* for short descriptions\n Seasons 1-4\n Year 2021-Current\nThe first recorded season is 2021s3',
+    extended_usage: '- page_nbr [negative indices welcome] is required, while length_mod defaults to long.\n'+ seasonalHelpText,
     async execute(message, args) {
         const jsdom = require('jsdom'); // node doesn't support dom natively, so import a dom parser
         const {
