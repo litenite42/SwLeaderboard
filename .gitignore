@@ -91,3 +91,5 @@ dev.env
 # IDE preferences
 .idea/
 .vscode/
+
+board.json

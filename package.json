@@ -1,7 +1,7 @@
 {
   "name": "sw-leaderboard",
   "description": "pages through the SkillWarz Leaderboard",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "engines": {
     "node": "12.x"
   },
@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/nyx-litenite/SwLeaderboard#readme",
   "dependencies": {
+    "columnify": "^1.6.0",
     "discord.js": "^12.3.1",
     "dotenv": "^8.2.0",
     "fs": "0.0.1-security",

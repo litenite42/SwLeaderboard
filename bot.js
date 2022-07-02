@@ -1,4 +1,6 @@
 let Discord = require('discord.js');
+var columnify = require('columnify')
+
 let invis_space = '\u200B';
 let leaderboardUrl = 'https://skillwarz.com/modern/leaderboard##YEAR####SEASON##.php';
 
@@ -7,7 +9,7 @@ let min_season_nbr = 1,
     min_year = 2021,
     date = new Date(),
     max_year = date.getFullYear(),
-    current_season = Math.floor(date.getMonth() / 3) + 1
+    current_season = Math.floor(date.getMonth() / 3) + 1;
 
 class Bot {
     season_aliases = ['n', 'sn', 'season'];
@@ -15,11 +17,7 @@ class Bot {
 
     constructor() {
         this.data = '';
-        this.detailsHeaders = {
-            separator: '\u2003',
-            short: ['XP', 'KDR', 'Win %'],
-            long: ['XP', 'Kills', 'Deaths', 'KDR', 'HS', 'Streak', 'Win %', 'Last Active']
-        }
+        this.url = '';
     }
 
     sendPlayerCard(query, data, title, short) {
@@ -40,45 +38,44 @@ class Bot {
         query.channel.send("An error occurred. No Data was retrieved.")
     }
 
-    initLeaderPage(title, short) {
-        const responseEmbed = new Discord.MessageEmbed();
-
-        responseEmbed.setDescription(title);
-
-        let header = this.detailsHeaders.long.join(this.detailsHeaders.separator);
-        if (!!short) {
-            header = this.detailsHeaders.short.join(this.detailsHeaders.separator);
-        }
-        responseEmbed.addField(invis_space, `**${header}**`, false);
-
-        return responseEmbed;
-    }
-
-    sendLeaderPage(query, data, title, short) {
+    sendLeaderPage(query, data, page, short) {
         if (data.length) {
-            //   let Discord = require('discord.js'); // necessary discord js require to get the EmbedMessage definition
-            let responseEmbed = this.initLeaderPage(title + ' pt. 1', short);
-
+            let players = [];
+            let part = 1;
             for (let i = 0, j = 11; j < data.length + 11; i += 1, j += 11) {
                 let player = new Player(data.slice(i * 11, j));
-                let description = '';
+                let description = {};
+
                 if (!!short) {
-                    description = player.shortDescription(this.detailsHeaders.separator);
+                    description = player.shortDescription();
                 } else {
-                    description = player.longDescription(this.detailsHeaders.separator);
+                    description = player.longDescription();
                 }
-                if (i == 10) {
-                    query.channel.send({
-                        embed: responseEmbed
-                    });
-                    responseEmbed = this.initLeaderPage(title + ' pt. 2', short);
+
+                players.push(description);
+                
+                if (this.mod(players.length, 10) == 0) {
+                    let table = columnify(players,
+                        { 
+                            columnSplitter: ' | ', 
+                            align: 'right',
+                            headingTransform: function(heading) {
+                                return heading.toUpperCase();
+                            },
+                            config: {
+                                Name: {
+                                    align: 'left'
+                                }
+                            }
+                        });
+
+                    let title = this.buildLeaderboardTitle(page, part++);
+                    query.channel.send(`${title}\n\`\`\`${table}\`\`\``);
+                    players = [];
                 }
-                responseEmbed.addField(`${player.rank}) ${player.user}`, description, false);
             }
 
-            return query.channel.send({
-                embed: responseEmbed
-            });
+            return;
         }
         query.channel.send("An error occurred. No Data was retrieved.")
     }
@@ -87,6 +84,10 @@ class Bot {
               boolReplace = !result ? ' NOT ' : ' ';
 
         return result;
+    }
+
+    mod(n, m) {
+        return ((n % m) + m) % m; // taken from: https://web.archive.org/web/20090717035140if_/javascript.about.com/od/problemsolving/a/modulobug.htm for explanation of negative modules in js
     }
 
     isEmptyArray(arr) {
@@ -179,7 +180,21 @@ class Bot {
         }
 
         let url = leaderboardUrl.replace('##YEAR##', yearText).replace('##SEASON##', seasonText);
-        return url;
+        this.url = url;
+    }
+
+    buildLeaderboardTitle(page, part) {
+        let _url = this.url;
+        let title = `**__Leaderboard ##SEASONAL##Page ${page} pt. ${part}__**\n<${this.convertToWebpageUrl(this.url)}>`;
+        let season_replace = '';
+
+        if (_url.indexOf('_') !== -1) { // extract season info from url to place in title
+            let seasonal_info = _url.slice(_url.indexOf('_')+1).split('_').map((el) => el.split('.')[0]);
+            season_replace = seasonal_info.join(' ')+' ';            
+        }
+
+        title = title.replace('##SEASONAL##', season_replace);
+        return title;
     }
 
     convertToWebpageUrl(url) {
@@ -217,6 +232,11 @@ class Bot {
 var numeral = require('numeral');
 class Player {
     constructor(data) {
+        this.detailsHeaders = {
+            separator: '\u2003',
+            short: ['Rank', 'Name', 'XP', 'KDR', 'Win %'],
+            long: ['Rank', 'Name', 'XP', 'Kills', 'Deaths', 'KDR', 'HS', 'Streak', 'Win %', 'Last Active']
+        }
         this.data = data.slice(2);
         this.rank = data[0];
         this.user = data[1];
@@ -232,7 +252,6 @@ class Player {
     }
 
     PlayerCard(embed) {
-
         embed.addField('Name', this.user, true);
         embed.addField('XP', this.exp.format(), true);
         embed.addField(invis_space, '**Kill Stats**', false);
@@ -248,14 +267,29 @@ class Player {
         return embed;
     }
 
-    shortDescription(separator) {
+    convertToObj(a, b) {
+        if(!a || !a.length || !b || !b.length || a.length != b.length){
+            return null;
+        }
+
+        let obj = {};
+        
+        // Using the foreach method
+        a.forEach((k, i) => {obj[k] = b[i]});
+        return obj;
+    }
+
+    shortDescription() {
         const exp = this.exp.format(),
         kd = this.kdr,
         win_rate = this.rounds_won.value() / this.rounds_played.value(),
         wr = numeral(win_rate).format('0.00%');
-        return [exp, kd, wr].join(separator);
+
+        let obj = this.convertToObj(this.detailsHeaders.short, [this.rank, this.user, exp, kd, wr]);
+        return obj;
     }
-    longDescription(separator) {
+
+    longDescription() {
         const exp = this.exp.format(),
         kd = this.kdr,
         win_rate = this.rounds_won.value() / this.rounds_played.value(),
@@ -267,7 +301,8 @@ class Player {
         total = this.rounds_played.format(),
         last_active = this.last_active;
 
-        return [exp, kills, deaths, kd, hs, streak, wr, last_active].join(separator);
+        let obj = this.convertToObj(this.detailsHeaders.long, [this.rank, this.user, exp, kills, deaths, kd, hs, streak, wr, last_active]);
+        return obj;
     }
 }
 
