@@ -1,98 +1,81 @@
-const fs = require('fs');
-const Discord = require('discord.js');
-const {
-    admin,
-    user
-} = require('./roles.json');
+// Require the necessary discord.js classes
+const { Client, Events, GatewayIntentBits, Collection } = require('discord.js');
+const { RateLimiter } = require('discord.js-rate-limiter');
 
-// file containing config info
-const {
-    prefix,
-    silent,
-    environment
-} = require(`./config.json`);
+const fs = require('node:fs');
+const path = require('node:path');
 
-let DotEnv = require('dotenv');
-let result = {};
-if (!!environment && environment == 'production') {
-    result = DotEnv.config();
-} else {
-    result = DotEnv.config({
-        path: 'dev.env'
-    });
-}
+const DotEnv = require('dotenv');
+DotEnv.config();
 
-const version = process.env.npm_package_version;
+// Create a new client instance
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
-const client = new Discord.Client();
-client.commands = new Discord.Collection();
+client.commands = new Collection();
 
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+const commandsPath = path.join(__dirname, 'commands');
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
 for (const file of commandFiles) {
-    const command = require(`./commands/${file}`);
-
-    // set a new item in the Collection
-    // with the key as the command name and the value as the exported module
-    client.commands.set(command.name, command);
+	const filePath = path.join(commandsPath, file);
+	const command = require(filePath);
+	// Set a new item in the Collection with the key as the command name and the value as the exported module
+	if ('data' in command && 'execute' in command) {
+		client.commands.set(command.data.name, command);
+	}
+	else {
+		console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+	}
 }
 
-client.once('ready', () => {
-    client.channels.cache.forEach((channel) => {
-        if (channel.type === 'text' && channel.name == 'leaderboard' && silent !== 0) {
-            channel.send(`Hello from <@${client.user.id}>!\nEnter ${prefix}help for assistance.`);
-        }
-    });
+const G = (x) => x * 1000;
+
+const nbr_request = process.env.NBR_REQUESTS ?? 1,
+	interval = process.env.INTERVAL ?? 4;
+
+const rateLimiter = new RateLimiter(nbr_request, G(interval));
+const eventsPath = path.join(__dirname, 'events');
+const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+
+for (const file of eventFiles) {
+	const filePath = path.join(eventsPath, file);
+	const event = require(filePath);
+	if (event.once) {
+		client.once(event.name, (...args) => event.execute(rateLimiter, ...args));
+	}
+	else {
+		client.on(event.name, (...args) => event.execute(rateLimiter, ...args));
+	}
+}
+
+// When the client is ready, run this code (only once)
+// We use 'c' for the event parameter to keep it separate from the already defined 'client'
+client.on(Events.InteractionCreate, async interaction => {
+	if (!interaction.isChatInputCommand()) return;
+
+	const command = interaction.client.commands.get(interaction.commandName);
+
+	if (!command) {
+		console.error(`No command matching ${interaction.commandName} was found.`);
+		return;
+	}
+
+	if (command.rate_limit) {
+		const isLimited = rateLimiter.take(interaction.channelId);
+
+		if (isLimited) {
+			return interaction.reply(`**Error**: Exceeded the allowed number of recent requests. Current Rate-Limit: ${rateLimiter.amount} requests every ${rateLimiter.interval / 1000} seconds.`);
+		}
+	}
+
+	try {
+		await command.execute(interaction);
+	}
+	catch (error) {
+		console.error(error);
+		await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+	}
 });
 
-client.on('message', async(receivedMessage) => {
-    // It's good practice to ignore other bots. This also makes your bot ignore itself
-    // and not get into a spam loop (we call that "botception").
-    if (!receivedMessage.content.slice(0, prefix.length)
-								.toLowerCase()
-								.startsWith(prefix) ||
-		receivedMessage.author.bot)
-        return;
-    // split input on spaces and then pop the bot's prefix off.
-    const args = receivedMessage.content.slice(prefix.length).trim().split(/ +/);
-    const commandName = args.shift().toLowerCase();
-    // determine if one of the bot's commands (or aliases) were entered
-    const command = client.commands.get(commandName) ||
-					client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
-
-    let some_error = false;
-
-    if (!command)
-        return;
-
-    if (!!command.role && command.role == 'admin') {
-        let member = receivedMessage.member;
-        try {
-            let admin_check = (!!receivedMessage.member &&
-								!!member && 
-								!!member.roles &&
-								member.roles.cache.some(r => admin.includes(r.name)));
-            if (!admin_check) {
-                receivedMessage.author.send('You do not have permission to run this command!');
-                receivedMessage.author.send(`Please respond in a server where you have any of the following roles: ${admin.join(',')}!`);
-                return;
-            }
-        } catch (error) {
-            if (receivedMessage.guild === null) {
-                receivedMessage.author.send(`Please respond in a server where you have any of the following roles: ${admin.join(',')}!`);
-                return;
-            }
-        }
-    }
-
-    if ((command.args && !args.length) || some_error) {
-        return receivedMessage.channel.send(`You didn't provide any arguments, ${receivedMessage.author}!`);
-    }
-
-    try {
-        await command.execute(receivedMessage, args);
-    } catch (error) {
-        receivedMessage.reply('there was an error trying to execute that command!');
-    }
-});
-client.login(process.env.AUTH_TOKEN); // this assumes you followed the step in the README about a .env file. If you haven't, rename .env.sample and replace the appropriate text with your bot's token.
+// Log in to Discord with your client's token
+client.login(process.env.AUTH_TOKEN);

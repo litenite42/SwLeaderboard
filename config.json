@@ -1,5 +1,7 @@
 {
     "prefix": "swlb ",
     "silent" : 1,
-    "environment": "production"
+    "environment": "production",
+    "guildId": "1044411813787349022",
+    "clientId" : "767887025763778600"
 }

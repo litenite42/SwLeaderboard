@@ -1,214 +1,285 @@
-let Discord = require('discord.js');
-var columnify = require('columnify')
+const Discord = require('discord.js');
+const columnify = require('columnify');
 
-let invis_space = '\u200B';
-let leaderboardUrl = 'https://skillwarz.com/modern/leaderboard##YEAR####SEASON##.php';
+const invis_space = '\u200B';
+const leaderboardUrl = 'https://skillwarz.com/modern/leaderboard##YEAR####SEASON##.php';
 
-let min_season_nbr = 1,
-    max_season_nbr = 4,
-    min_year = 2021,
-    date = new Date(),
-    max_year = date.getFullYear(),
-    current_season = Math.floor(date.getMonth() / 3) + 1;
+const path = require('path');
+const website_const = require(path.resolve(__dirname, './constants/website.js'));
+
+const axios = require('axios');
 
 class Bot {
-    season_aliases = ['n', 'sn', 'season'];
-    year_aliases = ['y', 'yr', 'year'];
 
-    constructor() {
-        this.data = '';
-        this.url = '';
-    }
+	constructor() {
+		this.season_aliases = ['n', 'sn', 'season'];
+		this.year_aliases = ['y', 'yr', 'year'];
+		this.data = '';
+		this.url = '';
+	}
 
-    sendPlayerCard(query, data, title, short) {
-        if (data.length) {
-            // necessary discord js require to get the EmbedMessage definition
-            const responseEmbed = new Discord.MessageEmbed();
+	async buildPlayerCard(url, title, name) {
+		// get the name using the correct name number
+		const result = await axios.post(url, {
+			search : name,
+		},
+		{
+			headers: {
+				'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246',
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+		}).then(r => r.data);
+		let response;
+		if (result && result.length) {
+			const data = this.getPlayersData(result);
+			// necessary discord js require to get the EmbedMessage definition
+			const responseEmbed = new Discord.EmbedBuilder();
 
-            responseEmbed.setDescription(title);
+			responseEmbed.setDescription(title);
 
-            let player = new Player(data);
+			const player = new Player(data);
 
-            let embed = player.PlayerCard(responseEmbed);
+			const embed = player.PlayerCard(responseEmbed);
 
-            return query.channel.send({
-                embed: embed
-            });
-        }
-        query.channel.send("An error occurred. No Data was retrieved.")
-    }
+			response = embed;
+		}
 
-    sendLeaderPage(query, data, page, short) {
-        if (data.length) {
-            let players = [];
-            let part = 1;
-            for (let i = 0, j = 11; j < data.length + 11; i += 1, j += 11) {
-                let player = new Player(data.slice(i * 11, j));
-                let description = {};
+		return response;
+	}
 
-                if (!!short) {
-                    description = player.shortDescription();
-                } else {
-                    description = player.longDescription();
-                }
+	async sendLeaderPage(query, data, page, short) {
+		console.log('sendLeaderPage');
+		if (data.length) {
+			console.log('data had length');
+			let players = [];
+			let part = 1;
+			let has_replied = false;
+			for (let i = 0, j = 11; j < data.length + 11; i += 1, j += 11) {
+				const player = new Player(data.slice(i * 11, j));
+				let description = {};
 
-                players.push(description);
-                
-                if (this.mod(players.length, 10) == 0) {
-                    let table = columnify(players,
-                        { 
-                            columnSplitter: ' | ', 
-                            align: 'right',
-                            headingTransform: function(heading) {
-                                return heading.toUpperCase();
-                            },
-                            config: {
-                                Name: {
-                                    align: 'left'
-                                }
-                            }
-                        });
+				if (short) {
+					description = player.shortDescription();
+				}
+				else {
+					description = player.longDescription();
+				}
 
-                    let title = this.buildLeaderboardTitle(page, part++);
-                    query.channel.send(`${title}\n\`\`\`${table}\`\`\``);
-                    players = [];
-                }
-            }
+				players.push(description);
 
-            return;
-        }
-        query.channel.send("An error occurred. No Data was retrieved.")
-    }
-    isNum(x) {
-        const result = !isNaN(x),
-              boolReplace = !result ? ' NOT ' : ' ';
+				if (this.mod(players.length, 10) == 0) {
+					const table = columnify(players,
+						{
+							columnSplitter: ' | ',
+							align: 'right',
+							headingTransform: function(heading) {
+								return heading.toUpperCase();
+							},
+							config: {
+								Name: {
+									align: 'left',
+								},
+							},
+						});
 
-        return result;
-    }
+					const title = this.buildLeaderboardTitle(page, part++),
+						message = `${title}\n\`\`\`${table}\`\`\``,
+						response = { content: message };
+					console.log(message);
+					if (query.followUp)	 response.ephemeral = true;
+					if (!query.followUp || !has_replied) {
+						await query.reply(response);
+						has_replied = true;
+					}
+					else {
+						await query.followUp(response);
+					}
+					players = [];
+				}
+			}
 
-    mod(n, m) {
-        return ((n % m) + m) % m; // taken from: https://web.archive.org/web/20090717035140if_/javascript.about.com/od/problemsolving/a/modulobug.htm for explanation of negative modules in js
-    }
+			return;
+		}
+		query.channel.send('An error occurred. No Data was retrieved.');
+	}
+	isNum(x) {
+		return !isNaN(x);
+	}
 
-    isEmptyArray(arr) {
-        return Array.isArray(arr) && !arr.length;
-    }
+	mod(n, m) {
+		// taken from: https://web.archive.org/web/20090717035140if_/javascript.about.com/od/problemsolving/a/modulobug.htm for explanation of negative modules in js
+		return ((n % m) + m) % m;
+	}
 
-    determineSeason(seasonNbr) {
-        let OPTION = require('./option.js');
+	isEmptyArray(arr) {
+		return Array.isArray(arr) && !arr.length;
+	}
 
-        let result = new OPTION();
-        result.default = current_season.toString();
+	determineSeason(seasonNbr) {
+		const OPTION = require('./option.js');
 
-        if (this.isNum(seasonNbr)) {
-            seasonNbr = +seasonNbr;
-            if (seasonNbr >= min_season_nbr && seasonNbr <= max_season_nbr) {
-                result.value = `${seasonNbr}`;
-            } else {
-                result.hasError = true;
-                result.msg = `Season must be in the interval [${min_season_nbr},${max_season_nbr}].`;
-            }       
-        }
+		const result = new OPTION();
+		result.default = website_const.current_season.toString();
 
-        return result;
-    }
+		if (this.isNum(seasonNbr)) {
+			seasonNbr = +seasonNbr;
+			if (seasonNbr >= website_const.min_season_nbr && seasonNbr <= website_const.max_season_nbr) {
+				result.value = `${seasonNbr}`;
+			}
+			else {
+				result.hasError = true;
+				result.msg = `Season must be in the interval [${website_const.min_season_nbr},${website_const.max_season_nbr}].`;
+			}
+		}
 
-    determineYear(yearNbr) {
-        let OPTION = require('./option.js');
-        
-        let result = new OPTION();
-        result.default = max_year.toString();
+		return result;
+	}
 
-        if (this.isNum(yearNbr)) {
-            yearNbr = +yearNbr;
+	determineYear(yearNbr) {
+		const OPTION = require('./option.js');
 
-            if (yearNbr >= min_year && yearNbr <= max_year) {
-                result.value = yearNbr.toString();
-            } else {
-                result.hasError = true;
-                result.msg = `Year must be in the interval [${min_year},${max_year}]`;
-            }
-        }
+		const result = new OPTION();
+		result.default = website_const.max_year.toString();
 
-        return result;
-    }
+		if (this.isNum(yearNbr)) {
+			yearNbr = +yearNbr;
 
-    buildLeaderboardURL(args) {        
-        let yearText = '',
-            seasonText = '';
-        
-        for (let ndx = 0; ndx < args.length; ndx++) {
-            let arg = args[ndx];
-            
-            if (!!arg && this.season_aliases.includes(arg)) {
-                ndx++;
-                let seasonNbr = args[ndx];
+			if (yearNbr >= website_const.min_year && yearNbr <= website_const.max_year) {
+				result.value = yearNbr.toString();
+			}
+			else {
+				result.hasError = true;
+				result.msg = `Year must be in the interval [${website_const.min_year},${website_const.max_year}]`;
+			}
+		}
 
-                let seasonResult = this.determineSeason(seasonNbr);
-                let seasonValue = seasonResult.getValueWithOffset();
+		return result;
+	}
 
-                if (seasonValue.offset) {
-                    ndx--;
-                }
+	getURLFromOptions(options) {
+		const yearOption = options.getInteger('year'),
+			seasonOption = options.getInteger('season');
 
-                seasonText = seasonValue.value;
-            } else if (!!arg && this.year_aliases.includes(arg)) {
-                ndx++;
-                let yearNbr = args[ndx];
+		let yearText = '',
+			seasonText = '';
 
-                let yearResult = this.determineYear(yearNbr);
-                let year = yearResult.getValueWithOffset();
+		if (yearOption) {
+			const yearResult = this.determineYear(yearOption);
+			yearText = yearResult.value;
+		}
 
-                if (year.offset){
-                    ndx--;
-                }
+		if (seasonOption) {
+			const seasonResult = this.determineSeason(seasonOption);
+			const season = seasonResult.getValueWithOffset();
+			seasonText = season.value;
+		}
 
-                yearText = year.value;
-            }
-        }
+		this.buildLeaderboardURL(yearText, seasonText);
+	}
 
-        if (!!yearText) {
-            yearText = `_${yearText}`;
-        } else if (!!seasonText) {
-            yearText = `_${max_year}`;
-        }
-        
-        if (!!seasonText) {
-            seasonText = `_S${seasonText}`;
-        } else if (!!yearText) {
-            seasonText = `_S${current_season}`;
-        }
+	getURLFromArgs(args) {
+		let yearText = '',
+			seasonText = '';
 
-        let url = leaderboardUrl.replace('##YEAR##', yearText).replace('##SEASON##', seasonText);
-        this.url = url;
-    }
+		for (let ndx = 0; ndx < args.length; ndx++) {
+			const arg = args[ndx];
 
-    buildLeaderboardTitle(page, part) {
-        let _url = this.url;
-        let title = `**__Leaderboard ##SEASONAL##Page ${page} pt. ${part}__**\n<${this.convertToWebpageUrl(this.url)}>`;
-        let season_replace = '';
+			if (!!arg && this.season_aliases.includes(arg)) {
+				ndx++;
+				const seasonNbr = args[ndx];
 
-        if (_url.indexOf('_') !== -1) { // extract season info from url to place in title
-            let seasonal_info = _url.slice(_url.indexOf('_')+1).split('_').map((el) => el.split('.')[0]);
-            season_replace = seasonal_info.join(' ')+' ';            
-        }
+				const seasonResult = this.determineSeason(seasonNbr);
+				const seasonValue = seasonResult.getValueWithOffset();
 
-        title = title.replace('##SEASONAL##', season_replace);
-        return title;
-    }
+				if (seasonValue.offset) {
+					ndx--;
+				}
 
-    convertToWebpageUrl(url) {
-        return url.replace('modern/', '');
-    }
+				seasonText = seasonValue.value;
+			}
+			else if (!!arg && this.year_aliases.includes(arg)) {
+				ndx++;
+				const yearNbr = args[ndx];
 
-    seasonalOptionalParams() {
-        let optionalParams = `[season_mod(${this.season_aliases.join(', ')}) season#] [year_mod(${this.year_aliases.join(', ')}) year#]`;
+				const yearResult = this.determineYear(yearNbr);
+				const year = yearResult.getValueWithOffset();
 
-        return optionalParams;
-    }
+				if (year.offset) {
+					ndx--;
+				}
 
-    seasonalLeaderboardHelp(commandName) {
-        let helpText = 
+				yearText = year.value;
+			}
+		}
+
+		this.buildLeaderboardURL(yearText, seasonText);
+	}
+
+	buildLeaderboardURL(yearText, seasonText) {
+		let year = '',
+			season = '';
+
+		if (yearText) {
+			year = `_${yearText}`;
+		}
+		else if (seasonText) {
+			year = `_${website_const.max_year}`;
+		}
+
+		if (seasonText) {
+			season = `_S${seasonText}`;
+		}
+		else if (yearText) {
+			season = `_S${website_const.current_season}`;
+		}
+
+		const url = leaderboardUrl.replace('##YEAR##', year).replace('##SEASON##', season);
+		this.url = url;
+	}
+
+	buildLeaderboardTitle(page, part) {
+		const _url = this.url;
+		let title = `**__Leaderboard ##SEASONAL##Page ${page} pt. ${part}__**\n<${this.convertToWebpageUrl(this.url)}>`;
+		let season_replace = '';
+
+		// extract season info from url to place in title
+		if (_url.indexOf('_') !== -1) {
+			const seasonal_info = _url.slice(_url.indexOf('_') + 1).split('_').map((el) => el.split('.')[0]);
+			season_replace = seasonal_info.join(' ') + ' ';
+		}
+
+		title = title.replace('##SEASONAL##', season_replace);
+		return title;
+	}
+
+	getPlayersData(result) {
+		// node doesn't support dom natively, so import a dom parser
+		const jsdom = require('jsdom');
+		const {
+			JSDOM,
+		} = jsdom;
+
+		const dom = new JSDOM(result);
+		// create a virtual dom from the page
+		const { document } = dom.window;
+		// split url at first _ then append year and season
+		const playerCells = document.querySelectorAll('tbody tr td');
+		// get an array of all the data cells in the table
+		return Array.prototype.slice.call(playerCells).map(f => f.textContent);
+	}
+
+	convertToWebpageUrl(url) {
+		return url.replace('modern/', '');
+	}
+
+	seasonalOptionalParams() {
+		const optionalParams = `[season_mod(${this.season_aliases.join(', ')}) season#] [year_mod(${this.year_aliases.join(', ')}) year#]`;
+
+		return optionalParams;
+	}
+
+	seasonalLeaderboardHelp(commandName) {
+		const helpText =
 `- season_mod and year_mod are optional parameters used separately (or together) to modify which leaderboard results will be pulled from.
 ~ Available Values:
     + Seasons 1-4
@@ -223,87 +294,100 @@ class Bot {
 
 ~ The first recorded season is y 2021 n 3`;
 
-        return helpText;
+		return helpText;
 
-    }
+	}
 }
 
 
-var numeral = require('numeral');
+const numeral = require('numeral');
 class Player {
-    constructor(data) {
-        this.detailsHeaders = {
-            separator: '\u2003',
-            short: ['Rank', 'Name', 'XP', 'KDR', 'Win %'],
-            long: ['Rank', 'Name', 'XP', 'Kills', 'Deaths', 'KDR', 'HS', 'Streak', 'Win %', 'Last Active']
-        }
-        this.data = data.slice(2);
-        this.rank = data[0];
-        this.user = data[1];
-        this.exp = numeral(data[2]);
-        this.kills = numeral(data[3]);
-        this.deaths = numeral(data[4]);
-        this.kdr = data[5];
-        this.headshots = numeral(data[6]);
-        this.killstreak = numeral(data[7]);
-        this.rounds_played = numeral(data[8]);
-        this.rounds_won = numeral(data[9]);
-        this.last_active = data[10];
-    }
+	constructor(data) {
+		this.detailsHeaders = {
+			separator: '\u2003',
+			short: ['Rank', 'Name', 'XP', 'KDR', 'Win %'],
+			long: ['Rank', 'Name', 'XP', 'Kills', 'KDR', 'HS', 'Streak', 'Win %'],
+		};
+		this.data = data.slice(2);
+		this.rank = data[0];
+		this.user = data[1];
+		this.exp = data[2];
+		this.kills = data[3];
+		this.deaths = data[4];
+		this.kdr = data[5];
+		this.headshots = data[6];
+		this.killstreak = data[7];
+		this.rounds_played = data[8];
+		this.rounds_won = data[9];
+		this.last_active = data[10];
 
-    PlayerCard(embed) {
-        embed.addField('Name', this.user, true);
-        embed.addField('XP', this.exp.format(), true);
-        embed.addField(invis_space, '**Kill Stats**', false);
-        embed.addField('K/D', this.kdr, true);
-        embed.addField('Kills', this.kills.format(), true);
-        embed.addField('Headshots', this.headshots.format(), true);
-        embed.addField('Deaths', this.deaths.format(), true);
-        embed.addField(invis_space, '**Round Stats**', false);
-        embed.addField('Total', this.rounds_played.format(), true);
-        embed.addField('Won', this.rounds_won.format('0,0 '), true);
-        embed.addField('Last Active', this.last_active, true);
+		this._abbrevFormat = '0.0 a';
+	}
 
-        return embed;
-    }
+	PlayerCard(embed) {
+		embed.addFields({ name: 'Name', value: this.user, inline: true },
+			{ name: 'XP', value: this._formatMagnitude(this.exp), inline: true },
+			{ name: invis_space, value: '**Kill Stats**', inline: false },
+			{ name:'K/D', value: numeral(this.kdr).format('0.00'), inline: true },
+			{ name:'Kills', value: this._formatMagnitude(this.kills), inline: true },
+			{ name:'Headshots', value: this._formatMagnitude(this.headshots), inline: true },
+			{ name:'Deaths', value: this._formatMagnitude(this.deaths), inline: true },
+			{ name:invis_space, value: '**Round Stats**', inline: false },
+			{ name:'Total', value: this._formatMagnitude(this.rounds_played), inline: true },
+			{ name:'Won', value: this._formatMagnitude(this.rounds_won), inline: true },
+			{ name:'Last Active', value: this.last_active, inline: true });
 
-    convertToObj(a, b) {
-        if(!a || !a.length || !b || !b.length || a.length != b.length){
-            return null;
-        }
+		return embed;
+	}
 
-        let obj = {};
-        
-        // Using the foreach method
-        a.forEach((k, i) => {obj[k] = b[i]});
-        return obj;
-    }
+	_formatMagnitude(numeralValue) {
+		const _abbrevList = ['K', 'M', 'B', 'T'];
 
-    shortDescription() {
-        const exp = this.exp.format(),
-        kd = this.kdr,
-        win_rate = this.rounds_won.value() / this.rounds_played.value(),
-        wr = numeral(win_rate).format('0.00%');
+		let temp = numeralValue,
+			abbrevIndex = -1,
+			value = numeralValue;
 
-        let obj = this.convertToObj(this.detailsHeaders.short, [this.rank, this.user, exp, kd, wr]);
-        return obj;
-    }
+		while ((temp /= 1000) > 1) {
+			abbrevIndex++;
+			value = temp;
+		}
 
-    longDescription() {
-        const exp = this.exp.format(),
-        kd = this.kdr,
-        win_rate = this.rounds_won.value() / this.rounds_played.value(),
-        wr = numeral(win_rate).format('0.00%'),
-        kills = this.kills.format(),
-        hs = this.headshots.format(),
-        deaths = this.deaths.format(),
-        streak = this.killstreak.value(),
-        total = this.rounds_played.format(),
-        last_active = this.last_active;
+		const abbrev = abbrevIndex > -1 ? `${_abbrevList[abbrevIndex]}` : '';
+		return numeral(value).format('0.0') + abbrev;
+	}
 
-        let obj = this.convertToObj(this.detailsHeaders.long, [this.rank, this.user, exp, kills, deaths, kd, hs, streak, wr, last_active]);
-        return obj;
-    }
+	convertToObj(a, b) {
+		if (!a || !a.length || !b || !b.length || a.length != b.length) {
+			return null;
+		}
+
+		const obj = {};
+
+		// Using the foreach method
+		a.forEach((k, i) => {obj[k] = b[i];});
+		return obj;
+	}
+
+	shortDescription() {
+		const exp = this._formatMagnitude(this.exp),
+			kd = this.kdr,
+			win_rate = numeral(this.rounds_won).value() / numeral(this.rounds_played).value(),
+			wr = numeral(win_rate).format('0.00%');
+
+		return this.convertToObj(this.detailsHeaders.short, [this.rank, this.user, exp, kd, wr]);
+	}
+
+	longDescription() {
+		const exp = this._formatMagnitude(this.exp),
+			kd = this.kdr,
+			win_rate = numeral(this.rounds_won).value() / numeral(this.rounds_played).value(),
+			wr = numeral(win_rate).format('0.00%'),
+			kills = this._formatMagnitude(this.kills),
+			hs = this._formatMagnitude(this.headshots),
+			streak = numeral(this.killstreak).value();
+
+		return this.convertToObj(this.detailsHeaders.long, [this.rank, this.user, exp, kills, kd, hs, streak, wr]);
+	}
 }
 
 module.exports = Bot;
